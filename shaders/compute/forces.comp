@@ -1,0 +1,44 @@
+#version 430 core
+layout (local_size_x = 64) in;
+
+struct Particle {
+    vec2 position;
+    vec2 velocity;
+    vec4 color;
+    float mass;
+    uint respawn;
+};
+
+layout(std430, binding = 0) buffer ParticleBuffer {
+    Particle particles[];
+};
+
+uniform int numParticles;
+uniform float dt;
+uniform float gravity;
+uniform float windSpeed;
+uniform float windDirection;
+
+void main() {
+    uint i = gl_GlobalInvocationID.x;
+    if (i >= uint(numParticles)) return;
+
+    // Skip particles that are already queued for respawn.
+    if (particles[i].respawn == 1u) return;
+    if (particles[i].mass <= 0.0) return;
+
+    vec2 gravityForce = vec2(0.0, -gravity * particles[i].mass);
+
+    float k = particles[i].mass * 0.5;
+    float windSpeedX = windSpeed * cos(windDirection);
+    float windSpeedY = windSpeed * sin(windDirection);
+    vec2 windForce = k * (vec2(windSpeedX, windSpeedY) - particles[i].velocity);
+
+    vec2 acceleration = (gravityForce + windForce) / particles[i].mass;
+    particles[i].velocity += acceleration * dt;
+    particles[i].position += particles[i].velocity * dt;
+
+    if (particles[i].position.y < 0.0 || particles[i].position.y > 1.0 || particles[i].position.x < 0.0 || particles[i].position.x > 1.0) {
+        particles[i].respawn = 1u;
+    }
+}
