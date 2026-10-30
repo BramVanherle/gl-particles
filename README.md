@@ -36,7 +36,7 @@ The program loads shaders from the sibling `shaders/` directory, so running from
 ## Notes
 
 - The app uses ImGui for the control panel.
+- Particles spawn gradually at startup and after reset; adjust the delay duration in the control panel.
 - The compute shaders are located under `shaders/compute/`.
 - The render shader is located under `shaders/render/`.
 - If the program fails to start, confirm that `glfw3.dll` is present next to the executable and that your system supports OpenGL 4.3.
-

@@ -7,6 +7,7 @@ struct Particle {
     vec4 color;
     float mass;
     uint respawn;
+    float spawnDelay;
 };
 
 layout(std430, binding = 0) buffer ParticleBuffer {
@@ -16,6 +17,8 @@ layout(std430, binding = 0) buffer ParticleBuffer {
 uniform int numParticles;
 uniform int frameIndex;
 uniform int respawnAll;
+uniform float dt;
+uniform float spawnDelayDuration;
 uniform vec2 spawnPosMin;
 uniform vec2 spawnPosMax;
 uniform vec2 spawnVelMin;
@@ -34,26 +37,46 @@ uint hash_u32(uint x) {
     return x;
 }
 
-float rand01(uint seed) {
-    return float(hash_u32(seed)) / 4294967295.0;
+float toUnit(uint h) {
+    return float(h >> 8) * (1.0 / 16777216.0);
 }
 
 void main() {
     uint i = gl_GlobalInvocationID.x;
     if (i >= uint(numParticles)) return;
+    if (respawnAll != 0) {
+        particles[i].respawn = 1u;
+        particles[i].spawnDelay = -1.0;
+        particles[i].mass = 0.0;
+    }
+    if (particles[i].respawn == 0u) return;
 
-    if (respawnAll == 0 && particles[i].respawn == 0u) return;
+    particles[i].mass = 0.0;
+    if (particles[i].spawnDelay < 0.0) {
+        particles[i].spawnDelay = spawnDelayDuration
+            * float(i) / float(max(numParticles - 1, 1));
+    }
+    particles[i].spawnDelay = max(particles[i].spawnDelay - dt, 0.0);
+    if (particles[i].spawnDelay > 0.0) return;
 
-    uint base = i + uint(frameIndex) * 747796405u;
+    uint s = hash_u32(i ^ hash_u32(uint(frameIndex) + 0x9e3779b9u));
 
-    vec2 p = mix(spawnPosMin, spawnPosMax, vec2(rand01(base + 11u), rand01(base + 23u)));
-    vec2 v = mix(spawnVelMin, spawnVelMax, vec2(rand01(base + 37u), rand01(base + 43u)));
-    float m = mix(spawnMassMin, spawnMassMax, rand01(base + 59u));
-    float cb = mix(spawnBlueMin, spawnBlueMax, rand01(base + 71u));
+    uint h0 = hash_u32(s);
+    uint h1 = hash_u32(h0 + 0x9e3779b9u);
+    uint h2 = hash_u32(h1 + 0x9e3779b9u);
+    uint h3 = hash_u32(h2 + 0x9e3779b9u);
+    uint h4 = hash_u32(h3 + 0x9e3779b9u);
+    uint h5 = hash_u32(h4 + 0x9e3779b9u);
+
+    vec2  p  = mix(spawnPosMin, spawnPosMax, vec2(toUnit(h0), toUnit(h1)));
+    vec2  v  = mix(spawnVelMin, spawnVelMax, vec2(toUnit(h2), toUnit(h3)));
+    float m  = mix(spawnMassMin, spawnMassMax, toUnit(h4));
+    float cb = mix(spawnBlueMin, spawnBlueMax, toUnit(h5));
 
     particles[i].position = p;
     particles[i].velocity = v;
-    particles[i].color = vec4(0.2, 0.5, cb, 1.0);
-    particles[i].mass = m;
-    particles[i].respawn = 0u;
+    particles[i].color    = vec4(0.2, 0.5, cb, 1.0);
+    particles[i].mass     = m;
+    particles[i].respawn  = 0u;
+    particles[i].spawnDelay = -1.0;
 }

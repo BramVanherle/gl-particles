@@ -20,4 +20,5 @@ struct SimulationParams {
     float spawnMassMax = 1.0f;
     float spawnBlueMin = 0.1f;
     float spawnBlueMax = 1.0f;
+    float spawnDelayDuration = 2.0f;
 };

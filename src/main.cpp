@@ -24,8 +24,9 @@ std::vector<Particle> createInitialParticles(int count) {
         p.position = {0.0f, 0.0f};
         p.velocity = {0.0f, 0.0f};
         p.color = {1.0f, 1.0f, 1.0f, 1.0f};
-        p.mass = 1.0f;
+        p.mass = 0.0f;
         p.respawn = 1u;
+        p.spawnDelay = -1.0f;
     }
     return particles;
 }
@@ -120,6 +121,8 @@ int main() {
         respawnShader.setInt("numParticles", NUM_PARTICLES);
         respawnShader.setInt("frameIndex", frameIndex);
         respawnShader.setInt("respawnAll", requestRespawnAll ? 1 : 0);
+        respawnShader.setFloat("dt", dt);
+        respawnShader.setFloat("spawnDelayDuration", params.spawnDelayDuration);
         respawnShader.setVec2("spawnPosMin", params.spawnPosMinX, params.spawnPosMinY);
         respawnShader.setVec2("spawnPosMax", params.spawnPosMaxX, params.spawnPosMaxY);
         respawnShader.setVec2("spawnVelMin", params.spawnVelMinX, params.spawnVelMinY);
@@ -168,6 +171,7 @@ int main() {
         ImGui::SliderFloat("Mass Max", &params.spawnMassMax, 0.01f, 5.0f);
         ImGui::SliderFloat("Blue Min", &params.spawnBlueMin, 0.0f, 1.0f);
         ImGui::SliderFloat("Blue Max", &params.spawnBlueMax, 0.0f, 1.0f);
+        ImGui::SliderFloat("Spawn Delay (seconds)", &params.spawnDelayDuration, 0.0f, 5.0f);
 
         ImGui::Separator();
         if (ImGui::Button("Reset Simulation")) {
